@@ -1,9 +1,12 @@
 spring:
   datasource:
-    url: '@datasource.url@'
-    username: '@datasource.username@'
-    driver-class-name: '@datasource.driver@'
-    password: '@datasource.password@'
+    url: jdbc:mysql://localhost:3306/activiti?characterEncoding=UTF-8
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
     tomcat:
       max-active: 1000
       max-idle: 1000
+  activiti:
+    database-schema-update: true
+    check-process-definitions: false

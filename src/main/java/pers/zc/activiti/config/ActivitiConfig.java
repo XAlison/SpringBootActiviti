@@ -1,77 +1,126 @@
 package pers.zc.activiti.config;
 
-import java.io.IOException;
-
-import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
-
-import org.activiti.engine.ProcessEngine;
-import org.activiti.engine.ProcessEngineConfiguration;
-import org.activiti.engine.RepositoryService;
-import org.activiti.engine.RuntimeService;
-import org.activiti.engine.TaskService;
+import org.activiti.engine.*;
+import org.activiti.engine.delegate.event.ActivitiEventListener;
 import org.activiti.engine.impl.cfg.StandaloneProcessEngineConfiguration;
-import org.activiti.engine.repository.DeploymentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.ResourcePatternResolver;
+
+import javax.sql.DataSource;
+import java.util.*;
 
 /**
- * 使用Java类完成配置文件
- * @author zc 2018-06-04
+ * @Description: 流程引擎配置服务中心
+ * @Author: xiewl
+ * @Date: 2018/10/15 15:56
+ * @Version 1.0
  */
 @Configuration
-public class ActivitiConfig {
+public class ActivitiConfig  {
 
-	@Autowired
+    @Autowired
     private DataSource dataSource;
     @Autowired
-    private ResourcePatternResolver resourceLoader;
-    
+    private EventListener eventListener;
+
     /**
-     * 初始化配置，将创建28张表
+     * 初始化配置，创建流程引擎表
+     *
      * @return
      */
     @Bean
     public StandaloneProcessEngineConfiguration processEngineConfiguration() {
         StandaloneProcessEngineConfiguration configuration = new StandaloneProcessEngineConfiguration();
         configuration.setDataSource(dataSource);
+        // 设置是否自动更新
         configuration.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
         configuration.setAsyncExecutorActivate(false);
+        // 注册全局监听器
+        List<ActivitiEventListener>  activitiEventListener=new ArrayList<>();
+        activitiEventListener.add(eventListener );
+        configuration.setEventListeners(activitiEventListener);
         return configuration;
     }
-    
+
+    /**
+     * 初始化配置，创建流程引擎表
+     *
+     * @return
+     */
     @Bean
-    public ProcessEngine processEngine() {
+    public ProcessEngine getProcessEngine() {
         return processEngineConfiguration().buildProcessEngine();
     }
 
-    @Bean
-    public RepositoryService repositoryService() {
-        return processEngine().getRepositoryService();
-    }
-
-    @Bean
-    public RuntimeService runtimeService() {
-        return processEngine().getRuntimeService();
-    }
-
-    @Bean
-    public TaskService taskService() {
-        return processEngine().getTaskService();
-    }
-    
     /**
-     * 部署流程
-     * @throws IOException 
+     * 仓库服务
+     *
+     * @return
      */
-//    @PostConstruct
-//    public void initProcess() throws IOException {
-//        DeploymentBuilder deploymentBuilder= repositoryService().createDeployment();
-////        Resource resource = resourceLoader.getResource("classpath:/processes/EceProvinceProcess.bpmn");
-////        deploymentBuilder .enableDuplicateFiltering().addInputStream(resource.getFilename(), resource.getInputStream()).name("deploymentTest").deploy();
-//        deploymentBuilder .enableDuplicateFiltering().addClasspathResource("TestProcess.bpmn").name("deploymentTest").deploy();
-//    }
+    @Bean
+    public RepositoryService getRepositoryService() {
+        return getProcessEngine().getRepositoryService();
+    }
+
+    /**
+     * 运行时服务
+     *
+     * @return
+     */
+    @Bean
+    public RuntimeService getRuntimeService() {
+        return getProcessEngine().getRuntimeService();
+    }
+
+    /**
+     * 表单服务
+     *
+     * @return
+     */
+    @Bean
+    public FormService getFormService() {
+        return getProcessEngine().getFormService();
+    }
+
+    /**
+     * 任务服务
+     *
+     * @return
+     */
+    @Bean
+    public TaskService getTaskService() {
+        return getProcessEngine().getTaskService();
+    }
+
+    /**
+     * 历史服务
+     *
+     * @return
+     */
+    @Bean
+    public HistoryService getHistoryService() {
+        return getProcessEngine().getHistoryService();
+    }
+
+    /**
+     * 认证服务
+     *
+     * @return
+     */
+    @Bean
+    public IdentityService getIdentityService() {
+        return getProcessEngine().getIdentityService();
+    }
+
+    /**
+     * 管理服务
+     *
+     * @return
+     */
+    @Bean
+    public ManagementService getManagementService() {
+        return getProcessEngine().getManagementService();
+    }
+
 }
