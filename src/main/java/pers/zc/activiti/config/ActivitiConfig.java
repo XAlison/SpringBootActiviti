@@ -3,9 +3,12 @@ package pers.zc.activiti.config;
 import org.activiti.engine.*;
 import org.activiti.engine.delegate.event.ActivitiEventListener;
 import org.activiti.engine.impl.cfg.StandaloneProcessEngineConfiguration;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import pers.zc.activiti.mapper.ProcessMapper;
 
 import javax.sql.DataSource;
 import java.util.*;
@@ -17,6 +20,8 @@ import java.util.*;
  * @Version 1.0
  */
 @Configuration
+@EnableTransactionManagement
+@MapperScan("pers.zc.activiti.mapper")
 public class ActivitiConfig  {
 
     @Autowired
@@ -36,6 +41,10 @@ public class ActivitiConfig  {
         // 设置是否自动更新
         configuration.setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE);
         configuration.setAsyncExecutorActivate(false);
+
+
+        //configuration.setCustomMybatisMappers(Collections.singleton(ProcessMapper.class));
+        //configuration.setActiviti5CustomMybatisXMLMappers(Collections.singleton("classpath:mapper/ProcessMapper.xml"));
         // 注册全局监听器
         List<ActivitiEventListener>  activitiEventListener=new ArrayList<>();
         activitiEventListener.add(eventListener );
