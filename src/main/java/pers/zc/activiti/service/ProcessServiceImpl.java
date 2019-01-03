@@ -7,10 +7,11 @@ import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.history.HistoricActivityInstance;
 import org.activiti.engine.history.HistoricProcessInstance;
+import org.activiti.engine.history.HistoricTaskInstance;
+import org.activiti.engine.history.HistoricVariableInstance;
 import org.activiti.engine.impl.RepositoryServiceImpl;
 import org.activiti.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.activiti.engine.repository.Deployment;
-import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.Execution;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
@@ -21,12 +22,16 @@ import org.springframework.stereotype.Service;
 import pers.zc.activiti.config.DeleteTaskCmd;
 import pers.zc.activiti.config.ProcessStateEnum;
 import pers.zc.activiti.config.SetFLowNodeAndGoCmd;
+import pers.zc.activiti.exceptions.ApplicationException;
 import pers.zc.activiti.mapper.ProcessMapper;
+import pers.zc.activiti.model.Definition;
 import pers.zc.activiti.model.viewmodels.InstanceViewModel;
+import pers.zc.activiti.model.viewmodels.TaskHistory;
 import pers.zc.activiti.model.viewmodels.TaskViewModel;
 import pers.zc.activiti.viewmodels.PagedFilterViewModel;
 import pers.zc.activiti.viewmodels.PagedListViewModel;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,7 +48,6 @@ public class ProcessServiceImpl implements ProcessService {
     private ProcessEngine processEngine;
     @Autowired
     private ProcessMapper processMapper;
-
 
     @Override
     public String deploy(String flowId, String descriptionXml, String tenantId, String... args) {
@@ -122,10 +126,10 @@ public class ProcessServiceImpl implements ProcessService {
             return "End";
         }
         for (Task nextTask : nextTasks) {
-            //  Todo 如果两个节点之间的连接线包含退回, 用于处理退回逻辑
-            // List<Connection> connections = processMapper.selectConnectionsByNode(
-            //currentTask.getProcessDefinitionId().split(":")[0], currentTask.getTaskDefinitionKey(), nextTask.getTaskDefinitionKey())
-/*
+            // 如果两个节点之间的连接线包含退回, 用于处理退回逻辑
+          /*  List<Connection> connections = processMapper.selectConnectionsByNode(
+            currentTask.getProcessDefinitionId().split(":")[0], currentTask.getTaskDefinitionKey(), nextTask.getTaskDefinitionKey())
+
             if (connections.stream().anyMatch(m -> Connection.OPERATION_TYPE_BACK.equals(m.getOperationType()))) {
                 // 获取相同节点定义的历史任务
                 HistoricTaskInstance historicTask = historyService.createHistoricTaskInstanceQuery()
@@ -151,13 +155,12 @@ public class ProcessServiceImpl implements ProcessService {
         return StringUtils.join(nextTasks.stream().map(TaskInfo::getId).collect(Collectors.toList()), ",");
     }
 
-
     @Override
-    public void recallTask(String taskId) {
+    public void recallTask(String taskId) throws ApplicationException {
         // 当前任务
         Task currentTask = processEngine.getTaskService().createTaskQuery().taskId(taskId).singleResult();
         if (currentTask == null) {
-            // throw new Exception("流程未启动或已执行完成，无法撤回");
+            throw new ApplicationException("流程未启动或已执行完成，无法撤回");
         }
         //获取流程定义
         Process process = processEngine.getRepositoryService().getBpmnModel(currentTask.getProcessDefinitionId()).getMainProcess();
@@ -166,7 +169,7 @@ public class ProcessServiceImpl implements ProcessService {
                 .getDeployedProcessDefinition(currentTask
                         .getProcessDefinitionId());
         if (definition == null) {
-            // throw new Exception("流程定义未找到");
+            throw new ApplicationException("流程定义未找到");
 
         }
         // 查询历史中上一任务节点
@@ -175,7 +178,7 @@ public class ProcessServiceImpl implements ProcessService {
                 .filter(activityInstance -> "userTask".equals(activityInstance.getActivityType()))
                 .findFirst();
         if (!nextTask.isPresent()) {
-            //throw new ServiceException("没有可撤回的任务节点");
+            throw new ApplicationException("没有可撤回的任务节点");
         }
         // 获取目标节点定义
         FlowNode targetNode = (FlowNode) process.getFlowElement(nextTask.get().getActivityId());
@@ -198,7 +201,7 @@ public class ProcessServiceImpl implements ProcessService {
         String activityId = execution.getActivityId();
         // 当前活动节点
         FlowNode sourceFlowNode = (FlowNode) process.getFlowElement(activityId);
-        FlowNode targetFlowNode = (FlowNode) process.getFlowElement("endevent1");
+        FlowNode targetFlowNode = (FlowNode) process.getFlowElement("endpoint");
         //记录原活动方向
         List<SequenceFlow> oriSequenceFlows = new ArrayList<>();
         oriSequenceFlows.addAll(sourceFlowNode.getOutgoingFlows());
@@ -216,7 +219,6 @@ public class ProcessServiceImpl implements ProcessService {
         processEngine.getTaskService().complete(task.getId());
         // 恢复原方向
         sourceFlowNode.setOutgoingFlows(oriSequenceFlows);
-        // TODO 需要处理流程状态
         // 修改流程执行状态
         this.modifyProcessState(instanceId, ProcessStateEnum.已终止.getValue());
 
@@ -225,30 +227,59 @@ public class ProcessServiceImpl implements ProcessService {
     @Override
     public void cancelProcess(String instanceId) throws Exception {
         // 获取正在运行实例任务
-        // 实例任务如果完成需要从历史数据查询对应key
         HistoricProcessInstance instance = processEngine.getHistoryService()
                 .createHistoricProcessInstanceQuery()
                 .processInstanceId(instanceId)
                 .singleResult();
         if (instance == null) {
-            throw new Exception("未查询到流程实例任务");
+            throw new ApplicationException("未查询到流程实例任务");
         }
         // 判断当前实例任务是否已经结束
         if (instance.getEndTime() == null) {
-            throw new Exception("进行中的流程不能进行作废操作");
+            throw new ApplicationException("进行中的流程不能进行作废操作");
         }
-        // 修改流程执行状态
+        // 流程执行状态
         this.modifyProcessState(instance.getId(), ProcessStateEnum.已作废.getValue());
     }
 
     @Override
     public int modifyProcessState(String instanceId, String state) throws Exception {
-        // TODO 需要处理流程状态
         Map<String, String> instanceMap = new HashMap<String, String>() {{
             put("instanceId", instanceId);
             put("state", state);
         }};
-        return 0;
+        return processMapper.modifyProcessState(instanceMap);
+    }
+
+    @Override
+    public List<TaskHistory> getTaskHistory(String instanceId) throws ApplicationException {
+        // 开始时间 结束时间 操作按钮 操作人
+        List<TaskHistory> histories = new ArrayList<>();
+        long task = processEngine.getHistoryService().createHistoricTaskInstanceQuery().processInstanceId(instanceId).count();
+        if (task == 0) {
+            throw new ApplicationException("流程不存在");
+        }
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        List<HistoricActivityInstance> history = processEngine.getHistoryService().createHistoricActivityInstanceQuery().processInstanceId(instanceId).activityType("userTask").list();
+        for (HistoricActivityInstance item : history) {
+            HistoricVariableInstance variable = processEngine.getHistoryService()
+                    .createHistoricVariableInstanceQuery()
+                    .variableName("btn_" + item.getTaskId()).singleResult();
+            TaskHistory taskHistory = new TaskHistory();
+            taskHistory.setId(histories.size() + 1);
+            taskHistory.setName(item.getActivityName());
+            taskHistory.setStartTime(format.format(item.getStartTime()));
+            if (item.getEndTime() != null) {
+                taskHistory.setEndTime(format.format(item.getEndTime()));
+            }
+            taskHistory.setOperator(item.getAssignee());
+
+            if (variable != null && !"".equals(variable.getValue())) {
+                taskHistory.setButtonName(variable.getValue().toString());
+            }
+            histories.add(taskHistory);
+        }
+        return histories;
     }
 
     @Override
@@ -260,37 +291,50 @@ public class ProcessServiceImpl implements ProcessService {
 
     @Override
     public PagedListViewModel<InstanceViewModel> getDoneTasks(PagedFilterViewModel filter) {
-        return null;
+        List<InstanceViewModel> tasks = processMapper.getDoneTasks(filter);
+        Long totalCount = processMapper.getDoneTasksCount(filter);
+        return new PagedListViewModel<>(tasks, totalCount);
     }
 
     @Override
     public PagedListViewModel<InstanceViewModel> startedInstances(PagedFilterViewModel filter) {
-        return null;
+        List<InstanceViewModel> tasks = processMapper.getInstances(filter);
+        Long totalCount = processMapper.getInstancesCount(filter);
+        return new PagedListViewModel<>(tasks, totalCount);
     }
 
     @Override
     public PagedListViewModel<InstanceViewModel> getInstances(PagedFilterViewModel filter) {
-        return null;
+        List<InstanceViewModel> tasks = processMapper.getInstances(filter);
+        Long totalCount = processMapper.getInstancesCount(filter);
+        return new PagedListViewModel<>(tasks, totalCount);
+    }
+
+
+
+    public Boolean getInstances1(PagedFilterViewModel filter) {
+        List<InstanceViewModel> tasks = processMapper.getInstances(filter);
+
+        // return new PagedListViewModel<>(tasks, totalCount);
+        return tasks==null;
     }
 
     @Override
-    public List<Map<String, Object>> getAllFlowList(String userId) throws Exception {
-
-        List<ProcessDefinition> list = processEngine.getRepositoryService()
-                .createProcessDefinitionQuery()
-                .orderByProcessDefinitionVersion().asc()//升序
-                .list();
-        //定义有序map，相同的key,添加map值后，后面的会覆盖前面的值
-        Map<String, ProcessDefinition> map = new LinkedHashMap<String, ProcessDefinition>();
-        //遍历相同的key，替换最新的值
-        for (ProcessDefinition pd : list) {
-            map.put(pd.getKey(), pd);
+    public Map<String, List<Definition>> getAllFlowList() throws Exception {
+        List<Definition> definitions = processMapper.getAllFlowList();
+        Map<String, List<Definition>> flowLists = new LinkedHashMap<>();
+        if (definitions != null && definitions.size() > 0) {
+            definitions.forEach(definition -> {
+                if (definition != null && definition.getCategory() != null) {
+                    if (flowLists.containsKey(definition.getCategory())) {
+                        flowLists.get(definition.getCategory()).add(definition);
+                    } else {
+                        flowLists.put(definition.getCategory(), new ArrayList<>());
+                    }
+                }
+            });
         }
-
-        List<ProcessDefinition> linkedList = new LinkedList<>(map.values());
-
-        return null;
+        return flowLists;
     }
-
 
 }

@@ -1,15 +1,12 @@
 package pers.zc.activiti.controller;
 
 import org.activiti.engine.ProcessEngine;
-import org.activiti.engine.history.HistoricTaskInstance;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.task.Task;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pers.zc.activiti.model.InstanceViewModel;
+import pers.zc.activiti.model.Definition;
 import pers.zc.activiti.model.ProcessModel;
 import pers.zc.activiti.service.ProcessService;
 import pers.zc.activiti.viewmodels.PagedFilterViewModel;
@@ -36,6 +33,12 @@ public class ProcessController {
     public String deployByResource(String resourceName, String tenantId) {
         return processService.deployByResource(resourceName, tenantId);
     }
+
+    @RequestMapping("getAllFlowList")
+    public Map<String, List<Definition>> getAllFlowList() throws Exception {
+        return processService.getAllFlowList();
+    }
+
 
     @RequestMapping("getProcessList")
     public List<ProcessModel> getProcessList() {
@@ -85,7 +88,7 @@ public class ProcessController {
         processService.recallTask(taskId);
     }
 
-
+    // 待办任务
     @RequestMapping("doingTasks")
     public PagedListViewModel<pers.zc.activiti.model.viewmodels.TaskViewModel> doingTasks(String userId) throws Exception {
 
@@ -99,6 +102,41 @@ public class ProcessController {
         //filter.put("currentUserId", "待定");
         return processService.getDoingTasks(pagedFilterViewModel);
     }
+
+    // 已办任务
+    @RequestMapping("getDoneTasks")
+    public PagedListViewModel<pers.zc.activiti.model.viewmodels.InstanceViewModel> getDoneTasks(String userId) throws Exception {
+
+        PagedFilterViewModel pagedFilterViewModel = new PagedFilterViewModel();
+        pagedFilterViewModel.setStart(0);
+        pagedFilterViewModel.setSize((int) Math.pow(2, 31));
+        pagedFilterViewModel.setFilters(new HashMap<String, String>(1) {{
+            put("currentUserId", userId);
+        }});
+        // TODO 当前用户
+        //filter.put("currentUserId", "待定");
+        return processService.getDoneTasks(pagedFilterViewModel);
+    }
+
+    @RequestMapping("startedInstances")
+    public PagedListViewModel<pers.zc.activiti.model.viewmodels.InstanceViewModel> startedInstances(String userId) throws Exception {
+        PagedFilterViewModel pagedFilterViewModel = new PagedFilterViewModel();
+        pagedFilterViewModel.setStart(0);
+        pagedFilterViewModel.setSize((int) Math.pow(2, 31));
+        pagedFilterViewModel.setFilters(new HashMap<String, String>(1) {{
+            put("currentUserId", userId);
+        }});
+        return processService.getInstances(pagedFilterViewModel);
+    }
+
+    @RequestMapping("getInstances")
+    private PagedListViewModel<pers.zc.activiti.model.viewmodels.InstanceViewModel> getInstances() throws Exception {
+        PagedFilterViewModel pagedFilterViewModel = new PagedFilterViewModel();
+        pagedFilterViewModel.setStart(0);
+        pagedFilterViewModel.setSize((int) Math.pow(2, 31));
+        return processService.getInstances(pagedFilterViewModel);
+    }
+
 
 
    /* @RequestMapping("doingTasks")
@@ -127,7 +165,7 @@ public class ProcessController {
         return taskViewModels;
     }*/
 
-    @RequestMapping("doneTasks")
+    /*@RequestMapping("doneTasks")
     public List<InstanceViewModel> doneTasks(String userId) throws Exception {
         List<InstanceViewModel> instanceViewModels = new ArrayList<>();
         List<HistoricTaskInstance> list = processEngine.getHistoryService()
@@ -154,13 +192,6 @@ public class ProcessController {
             instanceViewModels.add(model);
         }
         return instanceViewModels;
-    }
-
-
-    @RequestMapping("getInstances")
-    public void getInstances() throws Exception {
-
-    }
-
+    }*/
 
 }

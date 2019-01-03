@@ -1,7 +1,10 @@
 package pers.zc.activiti.service;
 
 import org.activiti.engine.task.Task;
+import pers.zc.activiti.exceptions.ApplicationException;
+import pers.zc.activiti.model.Definition;
 import pers.zc.activiti.model.viewmodels.InstanceViewModel;
+import pers.zc.activiti.model.viewmodels.TaskHistory;
 import pers.zc.activiti.model.viewmodels.TaskViewModel;
 import pers.zc.activiti.viewmodels.PagedFilterViewModel;
 import pers.zc.activiti.viewmodels.PagedListViewModel;
@@ -64,7 +67,7 @@ public interface ProcessService {
      *
      * @param taskId 任务id
      */
-    void recallTask(String taskId);
+    void recallTask(String taskId) throws ApplicationException;
 
     /**
      * 终止当前流程实例任务
@@ -89,6 +92,16 @@ public interface ProcessService {
     int modifyProcessState(String instanceId, String state) throws Exception;
 
     /**
+     * 流程执行历史
+     */
+    List<TaskHistory> getTaskHistory(String instanceId) throws ApplicationException;
+
+    /**
+     * 流程列表
+     */
+    Map<String, List<Definition>> getAllFlowList() throws Exception;
+
+    /**
      * 待办列表
      */
     PagedListViewModel<TaskViewModel> getDoingTasks(PagedFilterViewModel filter);
@@ -108,8 +121,6 @@ public interface ProcessService {
      */
     PagedListViewModel<InstanceViewModel> getInstances(PagedFilterViewModel filter);
 
-
-    List<Map<String, Object>> getAllFlowList(String userId) throws Exception;
 }
 
 

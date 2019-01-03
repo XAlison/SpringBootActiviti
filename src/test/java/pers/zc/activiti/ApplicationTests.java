@@ -12,7 +12,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-import sun.applet.AppletIOException;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -29,7 +28,7 @@ public class ApplicationTests {
 	public void contextLoads() {
 		//根据bpmn文件部署流程
 		Deployment deploy = repositoryService.createDeployment()
-				.addClasspathResource("leaveBill.bpmn")
+				.addClasspathResource("bpmn/leaveBill.bpmn")
 				.deploy();
 		//获取流程定义
 		ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().deploymentId(deploy.getId()).singleResult();

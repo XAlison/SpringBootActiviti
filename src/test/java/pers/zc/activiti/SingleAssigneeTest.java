@@ -1,7 +1,6 @@
 package pers.zc.activiti;
 
 import org.activiti.engine.ProcessEngine;
-import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.task.Task;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,12 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import pers.zc.activiti.mapper.ProcessMapper;
-import pers.zc.activiti.model.TaskViewModel;
+import pers.zc.activiti.model.Definition;
+import pers.zc.activiti.model.viewmodels.TaskHistory;
 import pers.zc.activiti.service.ProcessService;
-import pers.zc.activiti.viewmodels.PagedFilterViewModel;
-import pers.zc.activiti.viewmodels.PagedListViewModel;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,8 +39,24 @@ public class SingleAssigneeTest {
     private String taskid = "22503";
 
 
-    // 待办列表
     @Test
+    public void getAllFlowList() throws Exception {
+        Map<String, List<Definition>> flowLists = processService.getAllFlowList();
+        assertEquals(flowLists.size() > 0, true);
+    }
+
+    @Test
+    public void getTaskHistory() throws Exception {
+        List<TaskHistory> flowLists = processService.getTaskHistory("2501");
+        assertEquals(flowLists.size() > 0, true);
+    }
+
+
+
+
+
+    // 待办列表
+   /* @Test
     public void doingTasks() {
         PagedFilterViewModel pagedFilterViewModel = new PagedFilterViewModel();
         pagedFilterViewModel.setStart(0);
@@ -53,23 +69,23 @@ public class SingleAssigneeTest {
         assertEquals(tasks.size() > 0, true);
         assertEquals(totalCount> 0, true);
 
-    }
+    }*/
 
 
-    public void testId() {
+  /*  public void testId() {
         Map obj1 = processMapper.doingTasks();
         TaskViewModel TaskViewModel = new TaskViewModel();
-        /*Map obj = processEngine.getManagementService().executeCustomSql(new AbstractCustomSqlExecution<ProcessMapper, Map>(ProcessMapper.class) {
+        *//*Map obj = processEngine.getManagementService().executeCustomSql(new AbstractCustomSqlExecution<ProcessMapper, Map>(ProcessMapper.class) {
             @Override
             public Map execute(ProcessMapper processMapper) {
                 return processMapper.doingTasks();
             }
-        });*/
+        });*//*
         System.err.print(1);
 
-    }
+    }*/
 
-    public void listLastVersion() {
+   /* public void listLastVersion() {
         List<ProcessDefinition> list = processEngine.getRepositoryService()
                 .createProcessDefinitionQuery()
                 .orderByProcessDefinitionVersion().asc()//升序
@@ -87,11 +103,11 @@ public class SingleAssigneeTest {
             System.out.println(pd.getName());
             System.out.println(pd.getVersion());
         }
-    }
+    }*/
 
 
     public void deployByResource() {
-        final String resourceName = "singleAssignee.bpmn";
+        final String resourceName = "bpmn/singleAssignee.bpmn";
         String deployId = processService.deployByResource(resourceName, tenantId);
         System.out.println("流程部署成功，当前流程部署id：" + deployId);
     }
@@ -99,7 +115,7 @@ public class SingleAssigneeTest {
 
     public void startProcess() {
 
-        final String resourceName = "singleAssignee.bpmn";
+        final String resourceName = "bpmn/singleAssignee.bpmn";
         String deployId = processService.deployByResource(resourceName, tenantId);
         System.out.println("流程部署成功，当前流程部署id：" + deployId);
 

@@ -57,7 +57,7 @@ public class ActivitiController {
     public void setSingleAssignee() {
 
         //根据bpmn文件部署流程
-        repositoryService.createDeployment().addClasspathResource("singleAssignee.bpmn").deploy();
+        repositoryService.createDeployment().addClasspathResource("bpmn/singleAssignee.bpmn").deploy();
         // 设置User Task1受理人变量
         Map<String, Object> variables = new HashMap<>();
         variables.put("user1", "007");
@@ -91,7 +91,7 @@ public class ActivitiController {
     public void setMultiAssignee() {
 
         //根据bpmn文件部署流程
-        repositoryService.createDeployment().addClasspathResource("MultiAssignee.bpmn").deploy();
+        repositoryService.createDeployment().addClasspathResource("bpmn/MultiAssignee.bpmn").deploy();
         // 设置多个处理人变量 这里设置了三个人
         Map<String, Object> variables = new HashMap<>();
         List<String> userList = new ArrayList<>();
@@ -149,7 +149,7 @@ public class ActivitiController {
     public void exclusiveGateway() {
 
         //根据bpmn文件部署流程
-        repositoryService.createDeployment().addClasspathResource("exclusiveGateway.bpmn").deploy();
+        repositoryService.createDeployment().addClasspathResource("bpmn/exclusiveGateway.bpmn").deploy();
         // 设置User Task1受理人变量
         Map<String, Object> variables = new HashMap<>();
         variables.put("user1", "007");

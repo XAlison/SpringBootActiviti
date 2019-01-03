@@ -72,7 +72,8 @@
 
             <el-tab-pane label="发起流程" name="first">
                 <div class="img-list">
-                    <div class="img-content" style="width: 250px;height: 250px" v-for="(item,key) in flowList" :key="key">
+                    <div class="img-content" style="width: 250px;height: 250px" v-for="(item,key) in flowList"
+                         :key="key">
                         <div>选择发起人</div>
                         <el-select v-model="startUser" multiple placeholder="请选择">
                             <el-option
@@ -105,10 +106,11 @@
                         </el-option>
                     </el-select>
                     <el-form-item>
-                        <el-button type="primary" >查询</el-button>
+                        <el-button type="primary" @click="on_search">查询</el-button>
                     </el-form-item>
                 </el-form>
                 <template>
+
                     <el-table :data="doingTasks" style="width: 80%">
                         <el-table-column prop="id" label="节点任务ID" width="180"></el-table-column>
                         <el-table-column prop="started" label="节点任务的办理人" width="180"></el-table-column>
@@ -126,6 +128,20 @@
                 </template>
             </el-tab-pane>
             <el-tab-pane label="已办流程" name="third">
+                <!--查询表单-->
+                <el-form :inline="true" class="demo-form-inline">
+                    <el-select v-model="startUser" multiple="true" placeholder="请选择">
+                        <el-option
+                                v-for="item in defaultUser"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value">
+                        </el-option>
+                    </el-select>
+                    <el-form-item>
+                        <el-button type="primary" @click="on_search">查询</el-button>
+                    </el-form-item>
+                </el-form>
                 <template>
                     <el-table :data="doneTasks" style="width: 80%">
                         <el-table-column prop="id" label="节点任务ID" width="180"></el-table-column>
@@ -144,10 +160,77 @@
                     </el-table>
                 </template>
 
+            </el-tab-pane>
+            <el-tab-pane label="已发流程" name="fourth">
+                <!--查询表单-->
+                <el-form :inline="true" class="demo-form-inline">
+                    <el-select v-model="startUser" multiple="true" placeholder="请选择">
+                        <el-option
+                                v-for="item in defaultUser"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value">
+                        </el-option>
+                    </el-select>
+                    <el-form-item>
+                        <el-button type="primary" @click="on_search">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <template>
+                    <el-table :data="completeTasks" style="width: 80%">
+                        <el-table-column prop="id" label="节点任务ID" width="180"></el-table-column>
+                        <el-table-column prop="taskAssignee" label="节点任务的办理人" width="180"></el-table-column>
+                        <el-table-column prop="name" label="节点任务名称"></el-table-column>
+                        <el-table-column prop="startedTime" label="节点任务的创建时间" width="180"></el-table-column>
+                        <el-table-column prop="endTime" label="节点任务的结束时间" width="180"></el-table-column>
+                        <el-table-column prop="status" label="流程状态" width="180"></el-table-column>
+                        <el-table-column prop="taskName" label="节点流程实例ID" width="180"></el-table-column>
+                        <el-table-column label="操作">
+                            <template slot-scope="scope">
+                                <el-button size="mini" @click="completeTask(scope.$index, scope.row)">撤回</el-button>
+                                <el-button size="mini" @click="completeTask(scope.$index, scope.row)">状态</el-button>
+                            </template>
+                        </el-table-column>
+
+                    </el-table>
+                </template>
 
             </el-tab-pane>
-            <el-tab-pane label="已发流程" name="fourth">已发流程</el-tab-pane>
-            <el-tab-pane label="实例管理" name="five">实例管理</el-tab-pane>
+            <el-tab-pane label="实例管理" name="five">
+                <!--查询表单-->
+                <el-form :inline="true" class="demo-form-inline">
+                    <el-select v-model="startUser" multiple="true" placeholder="请选择">
+                        <el-option
+                                v-for="item in defaultUser"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value">
+                        </el-option>
+                    </el-select>
+                    <el-form-item>
+                        <el-button type="primary" @click="on_search">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <template>
+
+                    <el-table :data="instanceTasks" style="width: 80%">
+                        <el-table-column prop="id" label="节点任务ID" width="180"></el-table-column>
+                        <el-table-column prop="taskAssignee" label="节点任务的办理人" width="180"></el-table-column>
+                        <el-table-column prop="name" label="节点任务名称"></el-table-column>
+                        <el-table-column prop="startedTime" label="节点任务的创建时间" width="180"></el-table-column>
+                        <el-table-column prop="endTime" label="节点任务的结束时间" width="180"></el-table-column>
+                        <el-table-column prop="status" label="流程状态" width="180"></el-table-column>
+                        <el-table-column prop="taskName" label="节点流程实例ID" width="180"></el-table-column>
+                        <el-table-column label="操作">
+                            <template slot-scope="scope">
+                                <el-button size="mini" @click="completeTask(scope.$index, scope.row)">撤回</el-button>
+                                <el-button size="mini" @click="completeTask(scope.$index, scope.row)">状态</el-button>
+                            </template>
+                        </el-table-column>
+
+                    </el-table>
+                </template>
+            </el-tab-pane>
         </el-tabs>
     </template>
 
@@ -159,31 +242,33 @@
         data: function () {
             return {
                 activeName: "one",
-                tenantId: "A1",
+                tenantId: "谢文林",
                 startUser: "谢文林",
                 processList: [{
                     text: "单任务流程",
                     name: 'singleAssignee.bpmn'
                 }],
                 defaultUser: [{
-                    value: 'A1',
+                    value: '谢文林',
                     label: '谢文林'
                 }, {
-                    value: 'A2',
+                    value: '高创',
                     label: '高创'
                 }, {
-                    value: 'A3',
+                    value: '钱云飞',
                     label: '钱云飞'
                 }, {
-                    value: 'A4',
+                    value: '漆月',
                     label: '漆月'
                 }, {
-                    value: 'A5',
+                    value: '付玉',
                     label: '付玉'
                 }],
                 flowList: [],
                 doingTasks: [],
-                doneTasks: []
+                doneTasks: [],
+                completeTasks:[],
+                instanceTasks:[]
             }
         },
         mounted: function () {
@@ -198,6 +283,13 @@
                 this.loadDoingTasks();
                 // 加载已办列表
                 this.loadDoneTasks();
+                // 获取已发任务
+                this.startedInstances()
+                // 获取实例任务
+                this.loadGetInstances()
+            },
+            on_search: function () {
+                this.loadDoingTasks();
             },
             // 部署流程
             deployByResource(item, event) {
@@ -232,7 +324,7 @@
             },
             // 发起流程
             startProcess(item, event) {
-                this.$http.post('process/startProcess',
+                this.$http.get('process/startProcess',
                     {
                         processKey: item.key,
                         tenantId: this.tenantId,
@@ -249,16 +341,18 @@
             loadDoingTasks() {
                 this.$http.post('process/doingTasks',
                     {
-                        userId: this.startUser
-                    }, {emulateJSON: true}).then(
+                      userId: this.startUser==null||this.startUser==""?"谢文林":this.startUser
+                    }
+                    , {emulateJSON: true}).then(
                     function (res) {
                         this.doingTasks = res.body.rows;
                         // 处理成功的结果
-                        console.log(res.body.rows)
+                        console.log(res.body)
                     }, function (err) {
                         // 处理失败的结果
                         console.log(err)
                     });
+
             },
             // 完成任务
             completeTask(index, row) {
@@ -290,11 +384,38 @@
             },
             // 获取已办任务
             loadDoneTasks() {
-                this.$http.post('process/doneTasks',
-                    {userId: this.startUser}
-                    , {emulateJSON: true}).then(
+                this.$http.post('process/getDoneTasks',
+                    {
+                     userId:  this.startUser==null||this.startUser==""?"谢文林":this.startUser
+                    },{emulateJSON: true}).then(
                     function (res) {
-                        this.doneTasks = res.body;
+                        this.doneTasks = res.body.rows;
+                        // 处理成功的结果
+                        console.log(res.body)
+                    }, function (err) {
+                        // 处理失败的结果
+                        console.log(err)
+                    });
+            },
+            // 获取已发任务
+            startedInstances() {
+                this.$http.post('process/getInstances',
+                    {
+                        userId:  this.startUser==null||this.startUser==""?"谢文林":this.startUser
+                    },{emulateJSON: true}).then(
+                    function (res) {
+                        this.completeTasks =res.body.rows;
+                        console.log(res.body)
+                    }, function (err) {
+                        // 处理失败的结果
+                        console.log(err)
+                    });
+            },
+            // 获取实例任务
+            loadGetInstances() {
+                this.$http.post('process/getInstances',{emulateJSON: true}).then(
+                    function (res) {
+                        this.instanceTasks = res.body.rows;
                         // 处理成功的结果
                         console.log(res.body)
                     }, function (err) {
